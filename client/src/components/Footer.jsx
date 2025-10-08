@@ -35,7 +35,7 @@ export default function Footer() {
                 </div>
             </div>
             <p className="pt-4 text-center text-xs md:text-sm pb-5">
-                Copyright 2024 © Quick ai All Right Reserved.
+                Copyright 2025 © Quick ai All Right Reserved.
             </p>
         </footer>
         </>
