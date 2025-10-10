@@ -8,8 +8,10 @@ import {
   Download,
   MousePointerClick
 } from 'lucide-react'
+import { useApi, apiEndpoints } from '../utils/api'
 
 export const RemoveObject = () => {
+  const { apiCall } = useApi();
   const [uploadedFile, setUploadedFile] = useState(null)
   const [processedImage, setProcessedImage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -48,7 +50,7 @@ export const RemoveObject = () => {
     setSelectedAreas([...selectedAreas, { x, y }])
   }
 
-  // ✨ Simulated object removal
+  // ✨ Object removal using API
   const handleRemoveObject = async () => {
     if (!uploadedFile) {
       setError('Please upload an image first.')
@@ -61,14 +63,27 @@ export const RemoveObject = () => {
 
     setIsLoading(true)
     setError('')
+    setProcessedImage(null)
 
-    // Simulate API delay
-    setTimeout(() => {
-      setProcessedImage(
-        'https://via.placeholder.com/600x400.png?text=Object+Removed'
-      )
+    try {
+      const response = await apiCall(apiEndpoints.removeObject, {
+        method: 'POST',
+        body: JSON.stringify({
+          imageUrl: uploadedFile,
+          selectedAreas: selectedAreas
+        })
+      })
+      
+      if (response.success) {
+        setProcessedImage(response.processedImageUrl)
+      } else {
+        setError(response.message || 'Failed to remove object')
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while processing the image')
+    } finally {
       setIsLoading(false)
-    }, 2500)
+    }
   }
 
   return (

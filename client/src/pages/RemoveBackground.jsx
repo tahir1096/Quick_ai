@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { Upload, Loader2, Trash2, Scissors, Image as ImageIcon, Download } from 'lucide-react'
+import { useApi, apiEndpoints } from '../utils/api'
 
 export const RemoveBackground = () => {
+  const { apiCall } = useApi();
   const [uploadedFile, setUploadedFile] = useState(null)
   const [processedImage, setProcessedImage] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -24,7 +26,7 @@ export const RemoveBackground = () => {
     setError('')
   }
 
-  // ✨ Simulated background removal
+  // ✨ Background removal using API
   const handleRemoveBackground = async () => {
     if (!uploadedFile) {
       setError('Please upload an image first.')
@@ -33,13 +35,26 @@ export const RemoveBackground = () => {
 
     setIsLoading(true)
     setError('')
+    setProcessedImage(null)
 
-    // Simulate API delay (Replace this with your actual API call)
-    setTimeout(() => {
-      // Using placeholder transparent image as processed result
-      setProcessedImage('https://via.placeholder.com/600x400.png?text=Background+Removed')
+    try {
+      const response = await apiCall(apiEndpoints.removeBackground, {
+        method: 'POST',
+        body: JSON.stringify({
+          imageUrl: uploadedFile
+        })
+      })
+      
+      if (response.success) {
+        setProcessedImage(response.processedImageUrl)
+      } else {
+        setError(response.message || 'Failed to remove background')
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while processing the image')
+    } finally {
       setIsLoading(false)
-    }, 2000)
+    }
   }
 
   return (

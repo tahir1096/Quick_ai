@@ -1,39 +1,47 @@
 import { clerkClient } from "@clerk/express";
 
-// Middleware to check userId and hasPremiumPlan
+// Middleware to attach user context using Clerk and manage free usage
 export const auth = async (req, res, next) => {
-    let hasPremiumPlan; // Declare outside of try to keep it in scope
-
     try {
-        const { userId, has } = await req.auth();
-        // hasPremiumPlan is assigned here
-        hasPremiumPlan = await has({ plan: 'premium' });
+        const authContext = req.auth;
+        let userId = authContext?.userId;
+
+        // Development fallback: allow requests without Clerk in non-production
+        const isProduction = process.env.NODE_ENV === 'production';
+        if (!userId && !isProduction) {
+            req.userId = 'dev-user';
+            req.plan = 'free';
+            req.free_usage = 0;
+            return next();
+        }
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
 
         const user = await clerkClient.users.getUser(userId);
 
-        if (!hasPremiumPlan && user.privateMetadata?.free_usage > 0) {
-            // Case 1: Free user with remaining free usage
-            req.free_usage = user.privateMetadata.free_usage;
-        } else {
-            // Case 2: Premium user OR free user with 0 remaining usage
+        const planFromPublic = user.publicMetadata?.plan;
+        const planFromPrivate = user.privateMetadata?.plan;
+        const plan = (planFromPublic === 'premium' || planFromPrivate === 'premium') ? 'premium' : 'free';
+
+        const existingFreeUsage = Number(user.privateMetadata?.free_usage) || 0;
+
+        // Attach to request for controllers
+        req.userId = userId;
+        req.plan = plan;
+        req.free_usage = plan === 'premium' ? 0 : existingFreeUsage;
+
+        // Initialize free_usage if not present for free users
+        if (plan !== 'premium' && user.privateMetadata?.free_usage === undefined) {
             await clerkClient.users.updateUserMetadata(userId, {
-                privateMetadata: {
-                    free_usage: 0 // Reset usage on server
-                }
+                privateMetadata: { free_usage: 0 }
             });
-            req.free_usage = 0; // Set usage to 0 on request object
         }
 
-        // Set the user's plan and proceed to the next middleware/route handler
-        req.plan = hasPremiumPlan ? 'premium' : 'free';
         next();
-
     } catch (error) {
-        // Handle any errors that occurred during auth or fetching user data
         console.error("Authentication middleware error:", error);
-
-        // Terminate the request or send an error response
-        // For security, you might just send a generic error
-        res.status(401).send("Unauthorized or Internal Server Error");
+        res.status(401).json({ success: false, message: "Unauthorized or Internal Server Error" });
     }
 }

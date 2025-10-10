@@ -1,19 +1,22 @@
 import React, { useState } from 'react'
 import { Image, Sparkles, Loader2, Upload, Trash2 } from 'lucide-react'
+import { useApi, apiEndpoints } from '../utils/api'
 
 export const GenerateImages = () => {
+  const { apiCall } = useApi();
   const [prompt, setPrompt] = useState('')
-  const [generatedImage, setGeneratedImage] = useState(null)
+  const [generatedImages, setGeneratedImages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [uploadedFile, setUploadedFile] = useState(null)
+  const [style, setStyle] = useState('realistic')
 
   // 📤 Handle image upload
   const handleFileUpload = (e) => {
     const file = e.target.files[0]
     if (file) {
       setUploadedFile(URL.createObjectURL(file))
-      setGeneratedImage(null) // Clear generated image when uploading new file
+      setGeneratedImages([]) // Clear generated images when uploading new file
     }
   }
 
@@ -22,7 +25,7 @@ export const GenerateImages = () => {
     setUploadedFile(null)
   }
 
-  // ✨ Simulated image generation function
+  // ✨ Image generation using API
   const handleGenerateImage = async () => {
     if (!prompt.trim()) {
       setError('Please enter a prompt to generate an image.')
@@ -31,13 +34,29 @@ export const GenerateImages = () => {
 
     setError('')
     setIsLoading(true)
+    setGeneratedImages([])
 
-    // Simulated API delay
-    setTimeout(() => {
-      setGeneratedImage(`https://picsum.photos/seed/${encodeURIComponent(prompt)}/600/400`)
+    try {
+      const response = await apiCall(apiEndpoints.generateImages, {
+        method: 'POST',
+        body: JSON.stringify({
+          prompt: prompt,
+          style: style,
+          count: 2
+        })
+      })
+      
+      if (response.success) {
+        setGeneratedImages(response.images)
+        setUploadedFile(null)
+      } else {
+        setError(response.message || 'Failed to generate images')
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while generating images')
+    } finally {
       setIsLoading(false)
-      setUploadedFile(null)
-    }, 2000)
+    }
   }
 
   return (
@@ -64,6 +83,22 @@ export const GenerateImages = () => {
             placeholder="E.g., A futuristic city skyline at sunset in watercolor style"
             className="w-full p-3 text-sm rounded-md border border-gray-300 outline-none resize-none focus:ring-2 focus:ring-blue-200"
           ></textarea>
+
+          {/* Style Selection */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Style</label>
+            <select
+              value={style}
+              onChange={(e) => setStyle(e.target.value)}
+              className="w-full p-2 text-sm rounded-md border border-gray-300 outline-none focus:ring-2 focus:ring-blue-200"
+            >
+              <option value="realistic">Realistic</option>
+              <option value="cartoon">Cartoon</option>
+              <option value="watercolor">Watercolor</option>
+              <option value="oil-painting">Oil Painting</option>
+              <option value="digital-art">Digital Art</option>
+            </select>
+          </div>
 
           {/* Error Message */}
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
@@ -113,33 +148,43 @@ export const GenerateImages = () => {
         </div>
 
         {/* Right Column - Image Preview */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex flex-col items-center justify-center min-h-[400px]">
+        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm min-h-[400px]">
           {isLoading ? (
-            <div className="flex flex-col items-center gap-3 text-gray-400">
+            <div className="flex flex-col items-center justify-center gap-3 text-gray-400 h-full">
               <Loader2 className="w-10 h-10 animate-spin" />
-              <p className="text-sm">Generating your image...</p>
+              <p className="text-sm">Generating your images...</p>
             </div>
-          ) : generatedImage ? (
-            <div className="flex flex-col items-center gap-4 w-full">
-              <img
-                src={generatedImage}
-                alt="Generated"
-                className="w-full max-w-md rounded-lg shadow-lg"
-              />
-              <button className="px-4 py-2 text-sm bg-[#226BFF] text-white rounded-lg hover:shadow-md">
-                Download Image
-              </button>
+          ) : generatedImages.length > 0 ? (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Generated Images</h3>
+              <div className="grid grid-cols-1 gap-4">
+                {generatedImages.map((image, index) => (
+                  <div key={index} className="flex flex-col items-center gap-3">
+                    <img
+                      src={image.url}
+                      alt={`Generated ${index + 1}`}
+                      className="w-full rounded-lg shadow-lg"
+                    />
+                    <button className="px-4 py-2 text-sm bg-[#226BFF] text-white rounded-lg hover:shadow-md">
+                      Download Image
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : uploadedFile ? (
-            <img
-              src={uploadedFile}
-              alt="Uploaded Preview"
-              className="w-full max-w-md rounded-lg shadow-md"
-            />
+            <div className="flex flex-col items-center gap-4">
+              <img
+                src={uploadedFile}
+                alt="Uploaded Preview"
+                className="w-full max-w-md rounded-lg shadow-md"
+              />
+              <p className="text-sm text-gray-500">Uploaded image preview</p>
+            </div>
           ) : (
-            <div className="text-gray-400 flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center justify-center text-gray-400 gap-3 h-full">
               <Image className="w-10 h-10" />
-              <p className="text-sm">No image to display. Generate or upload an image to see preview here.</p>
+              <p className="text-sm text-center">No image to display. Generate or upload an image to see preview here.</p>
             </div>
           )}
         </div>

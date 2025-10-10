@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
-import { Edit, Sparkles } from 'lucide-react'
+import { Edit, Sparkles, Loader2 } from 'lucide-react'
+import { useApi, apiEndpoints } from '../utils/api'
 
 export const WriteArticle = () => {
+  const { apiCall } = useApi();
   const articleLength = [
     { length: 800, text: 'Short (500-800 words)' },
     { length: 1200, text: 'Medium (800-1200 words)' },
@@ -10,11 +12,37 @@ export const WriteArticle = () => {
 
   const [selectedLength, setSelectedLength] = useState(articleLength[0])
   const [input, setInput] = useState('')
+  const [generatedArticle, setGeneratedArticle] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const onSubmitHandler = async (e) => {
     e.preventDefault()
-    console.log('Topic:', input)
-    console.log('Selected Length:', selectedLength)
+    if (!input.trim()) return;
+    
+    setIsLoading(true)
+    setError('')
+    setGeneratedArticle('')
+    
+    try {
+      const response = await apiCall(apiEndpoints.generateArticle, {
+        method: 'POST',
+        body: JSON.stringify({
+          prompt: input,
+          length: selectedLength.length
+        })
+      })
+      
+      if (response.success) {
+        setGeneratedArticle(response.content)
+      } else {
+        setError(response.message || 'Failed to generate article')
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while generating the article')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -56,9 +84,13 @@ export const WriteArticle = () => {
           ))}
         </div>
 
-        <button className='w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#226BFF] to-[#65ADFF] text-white px-4 py-2 mt-6 text-sm rounded-lg cursor-pointer'>
-          <Edit className='w-5' />
-          Generate Article
+        <button 
+          type="submit"
+          disabled={isLoading || !input.trim()}
+          className='w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#226BFF] to-[#65ADFF] text-white px-4 py-2 mt-6 text-sm rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'
+        >
+          {isLoading ? <Loader2 className='w-5 animate-spin' /> : <Edit className='w-5' />}
+          {isLoading ? 'Generating...' : 'Generate Article'}
         </button>
       </form>
 
@@ -69,11 +101,27 @@ export const WriteArticle = () => {
           <h1 className='text-xl font-semibold'>Generated Article</h1>
         </div>
 
-        <div className='flex-1 flex justify-center items-center'>
-          <div className='text-sm flex flex-col items-center gap-5 text-gray-400'>
-            <Edit className='w-9 h-9' />
-            <p>Enter a topic and click "Generate Article" to get started</p>
-          </div>
+        <div className='flex-1 overflow-y-auto'>
+          {error && (
+            <div className='p-3 bg-red-50 border border-red-200 rounded-md mb-4'>
+              <p className='text-red-600 text-sm'>{error}</p>
+            </div>
+          )}
+          
+          {generatedArticle ? (
+            <div className='prose prose-sm max-w-none'>
+              <div className='whitespace-pre-wrap text-sm leading-relaxed'>
+                {generatedArticle}
+              </div>
+            </div>
+          ) : (
+            <div className='flex justify-center items-center h-full'>
+              <div className='text-sm flex flex-col items-center gap-5 text-gray-400'>
+                <Edit className='w-9 h-9' />
+                <p>Enter a topic and click "Generate Article" to get started</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

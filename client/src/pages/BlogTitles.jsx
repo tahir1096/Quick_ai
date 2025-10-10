@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Plus, Search, FileText } from 'lucide-react'
+import { Plus, Search, FileText, Loader2, Hash } from 'lucide-react'
+import { useApi, apiEndpoints } from '../utils/api'
 
 const dummyBlogs = [
   { id: 1, title: 'The Future of AI in Healthcare', date: 'Oct 5, 2025', length: '800 words' },
@@ -8,11 +9,54 @@ const dummyBlogs = [
 ]
 
 export const BlogTitles = () => {
+  const { apiCall } = useApi();
   const [searchTerm, setSearchTerm] = useState('')
+  const [input, setInput] = useState('')
+  const [generatedTitles, setGeneratedTitles] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [showGenerator, setShowGenerator] = useState(false)
 
-  const filteredBlogs = dummyBlogs.filter(blog =>
+  const filteredBlogs = generatedTitles.length > 0 ? generatedTitles.filter(blog =>
+    blog.title.toLowerCase().includes(searchTerm.toLowerCase())
+  ) : dummyBlogs.filter(blog =>
     blog.title.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const generateTitles = async (e) => {
+    e.preventDefault()
+    if (!input.trim()) return;
+    
+    setIsLoading(true)
+    setError('')
+    
+    try {
+      const response = await apiCall(apiEndpoints.generateBlogTitles, {
+        method: 'POST',
+        body: JSON.stringify({
+          prompt: input,
+          count: 5
+        })
+      })
+      
+      if (response.success) {
+        const titles = response.titles.map((title, index) => ({
+          id: Date.now() + index,
+          title: title.trim(),
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          length: 'Generated'
+        }))
+        setGeneratedTitles(titles)
+        setInput('')
+      } else {
+        setError(response.message || 'Failed to generate titles')
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while generating titles')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="h-full overflow-y-auto p-6 text-slate-700">
@@ -23,11 +67,47 @@ export const BlogTitles = () => {
           <FileText className="w-6 text-[#4A7AFF]" />
           Blog Titles
         </h1>
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#226BFF] to-[#65ADFF] text-white rounded-lg shadow hover:opacity-90">
-          <Plus className="w-4" />
-          New Blog
+        <button 
+          onClick={() => setShowGenerator(!showGenerator)}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#226BFF] to-[#65ADFF] text-white rounded-lg shadow hover:opacity-90"
+        >
+          <Hash className="w-4" />
+          Generate Titles
         </button>
       </div>
+
+      {/* Generator Form */}
+      {showGenerator && (
+        <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Hash className="w-5 text-[#4A7AFF]" />
+            Generate Blog Titles
+          </h3>
+          <form onSubmit={generateTitles} className="flex gap-3">
+            <input
+              type="text"
+              placeholder="Enter your blog topic or niche..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="flex-1 px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:border-blue-400 text-sm"
+              required
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#226BFF] to-[#65ADFF] text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? <Loader2 className="w-4 animate-spin" /> : <Hash className="w-4" />}
+              {isLoading ? 'Generating...' : 'Generate'}
+            </button>
+          </form>
+          {error && (
+            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="relative mb-6 max-w-sm">

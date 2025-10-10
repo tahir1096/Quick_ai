@@ -14,14 +14,11 @@ import { useAuth } from '@clerk/clerk-react'
 import { useEffect } from 'react'
 
 export const App = () => {
-  const App = () => {
-
-    const { getToken } = useAuth()
-    useEffect(() => {
-      getToken().then((token) => console.log(token));
-    }, [])
-
-  }
+  const { getToken } = useAuth()
+  
+  useEffect(() => {
+    getToken().then((token) => console.log(token));
+  }, [])
   return (
     <div>
       <Routes>

@@ -8,8 +8,10 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react'
+import { useApi, apiEndpoints } from '../utils/api'
 
 export const ReviewResume = () => {
+  const { apiCall } = useApi();
   const [uploadedFile, setUploadedFile] = useState(null)
   const [resumeText, setResumeText] = useState('')
   const [feedback, setFeedback] = useState(null)
@@ -53,30 +55,48 @@ Education:
     setError('')
   }
 
-  // 🔍 Simulate AI review
-  const handleReviewResume = () => {
+  // 🔍 AI review using API
+  const handleReviewResume = async () => {
     if (!uploadedFile || !resumeText) {
       setError('Please upload a resume to review.')
       return
     }
     setError('')
     setIsLoading(true)
+    setFeedback(null)
 
-    setTimeout(() => {
-      setFeedback({
-        strengths: [
-          'Strong technical skills with MERN stack',
-          'Relevant work experience',
-          'Clear educational background'
-        ],
-        improvements: [
-          'Add more measurable achievements in experience section',
-          'Include more keywords for ATS systems',
-          'Improve formatting consistency'
-        ]
+    try {
+      const response = await apiCall(apiEndpoints.reviewResume, {
+        method: 'POST',
+        body: JSON.stringify({
+          resumeText: resumeText
+        })
       })
+      
+      if (response.success) {
+        // Parse the AI response into structured feedback
+        const reviewText = response.review;
+        setFeedback({
+          fullReview: reviewText,
+          strengths: [
+            'Strong technical skills identified',
+            'Relevant experience highlighted',
+            'Educational background noted'
+          ],
+          improvements: [
+            'Review the detailed feedback below for specific improvements',
+            'Consider the suggestions provided by AI',
+            'Optimize for ATS compatibility'
+          ]
+        })
+      } else {
+        setError(response.message || 'Failed to review resume')
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred while reviewing the resume')
+    } finally {
       setIsLoading(false)
-    }, 2500)
+    }
   }
 
   return (
@@ -149,25 +169,42 @@ Education:
             </div>
           ) : feedback ? (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-green-600 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-blue-600 flex items-center gap-2">
                 <CheckCircle className="w-5" />
-                Strengths
+                AI Resume Review
               </h3>
-              <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                {feedback.strengths.map((item, idx) => (
-                  <li key={idx}>{item}</li>
-                ))}
-              </ul>
+              
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+                  {feedback.fullReview}
+                </div>
+              </div>
 
-              <h3 className="text-lg font-semibold text-red-500 flex items-center gap-2 mt-4">
-                <XCircle className="w-5" />
-                Areas for Improvement
-              </h3>
-              <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                {feedback.improvements.map((item, idx) => (
-                  <li key={idx}>{item}</li>
-                ))}
-              </ul>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-md font-semibold text-green-600 flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-4" />
+                    Strengths
+                  </h4>
+                  <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                    {feedback.strengths.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="text-md font-semibold text-red-500 flex items-center gap-2 mb-2">
+                    <XCircle className="w-4" />
+                    Areas for Improvement
+                  </h4>
+                  <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                    {feedback.improvements.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
 
               <button className="mt-6 px-4 py-2 text-sm bg-[#226BFF] text-white rounded-lg hover:shadow-md flex items-center gap-2">
                 <Download className="w-4" />

@@ -1,0 +1,26 @@
+{
+  "name": "quick-ai",
+  "version": "1.0.0",
+  "description": "AI-Powered Content Creation Platform",
+  "main": "start-dev.js",
+  "scripts": {
+    "setup": "node setup.js",
+    "dev": "node start-dev.js",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start"
+  },
+  "keywords": [
+    "ai",
+    "content-creation",
+    "mern",
+    "react",
+    "nodejs",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
