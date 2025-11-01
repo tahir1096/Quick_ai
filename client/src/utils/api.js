@@ -7,7 +7,12 @@ export const useApi = () => {
 
   const apiCall = async (endpoint, options = {}) => {
     try {
-      const token = await getToken();
+      let token = null;
+      try {
+        token = await getToken();
+      } catch (tokenErr) {
+        console.warn('Token retrieval failed, proceeding without auth:', tokenErr.message);
+      }
 
       const config = {
         headers: {
@@ -21,7 +26,7 @@ export const useApi = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'API request failed');
+        throw new Error(data.message || `API error: ${response.status}`);
       }
 
       return data;

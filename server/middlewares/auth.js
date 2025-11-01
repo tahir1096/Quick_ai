@@ -34,9 +34,13 @@ export const auth = async (req, res, next) => {
 
         // Initialize free_usage if not present for free users
         if (plan !== 'premium' && user.privateMetadata?.free_usage === undefined) {
-            await clerkClient.users.updateUserMetadata(userId, {
-                privateMetadata: { free_usage: 0 }
-            });
+            try {
+                await clerkClient.users.updateUser(userId, {
+                    privateMetadata: { free_usage: 0 }
+                });
+            } catch (updateErr) {
+                console.error('Error initializing free_usage for user:', updateErr.message);
+            }
         }
 
         next();

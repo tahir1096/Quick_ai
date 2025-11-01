@@ -8,13 +8,17 @@ const AI = hasGemini ? new OpenAI({
     baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
 }) : null;
 
-
 export const generateArticle = async (req, res) => {
     try {
         const userId = req.userId;
-        const { prompt, length } = req.body;
+        const { prompt, length = 500 } = req.body;
         const plan = req.plan;
         const free_usage = req.free_usage;
+
+        // Validate required fields
+        if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+            return res.status(400).json({ success: false, message: "Prompt is required and must be a non-empty string" });
+        }
 
         if (plan !== 'premium' && free_usage >= 10) {
             return res.status(429).json({ success: false, message: "Limit reached. Upgrade to continue." });
@@ -35,14 +39,18 @@ export const generateArticle = async (req, res) => {
         try {
             await sql` INSERT INTO creations (user_id, prompt, content, type) 
             VALUES (${userId}, ${prompt}, ${content}, 'article')`;
-        } catch {}
+        } catch (dbErr) {
+            console.error('DB Insert Error (generateArticle):', dbErr.message);
+        }
 
         if (plan !== 'premium') {
             try {
-                await clerkClient.users.updateUserMetadata(userId, {
+                await clerkClient.users.updateUser(userId, {
                     privateMetadata: { free_usage: free_usage + 1 }
                 });
-            } catch {}
+            } catch (clerkErr) {
+                console.error('Clerk Update Error (generateArticle):', clerkErr.message);
+            }
         }
 
         res.json({ success: true, content })
@@ -60,6 +68,11 @@ export const generateBlogTitles = async (req, res) => {
         const { prompt, count = 5 } = req.body;
         const plan = req.plan;
         const free_usage = req.free_usage;
+
+        // Validate required fields
+        if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+            return res.status(400).json({ success: false, message: "Prompt is required and must be a non-empty string" });
+        }
 
         if (plan !== 'premium' && free_usage >= 10) {
             return res.status(429).json({ success: false, message: "Limit reached. Upgrade to continue." });
@@ -89,14 +102,18 @@ export const generateBlogTitles = async (req, res) => {
         try {
             await sql` INSERT INTO creations (user_id, prompt, content, type) 
             VALUES (${userId}, ${prompt}, ${titles.join('\n')}, 'blog_titles')`;
-        } catch {}
+        } catch (dbErr) {
+            console.error('DB Insert Error (generateBlogTitles):', dbErr.message);
+        }
 
         if (plan !== 'premium') {
             try {
-                await clerkClient.users.updateUserMetadata(userId, {
+                await clerkClient.users.updateUser(userId, {
                     privateMetadata: { free_usage: free_usage + 1 }
                 });
-            } catch {}
+            } catch (clerkErr) {
+                console.error('Clerk Update Error (generateBlogTitles):', clerkErr.message);
+            }
         }
 
         res.json({ success: true, titles })
@@ -114,6 +131,11 @@ export const generateImages = async (req, res) => {
         const plan = req.plan;
         const free_usage = req.free_usage;
 
+        // Validate required fields
+        if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+            return res.status(400).json({ success: false, message: "Prompt is required and must be a non-empty string" });
+        }
+
         if (plan !== 'premium' && free_usage >= 10) {
             return res.status(429).json({ success: false, message: "Limit reached. Upgrade to continue." });
         }
@@ -129,14 +151,18 @@ export const generateImages = async (req, res) => {
         try {
             await sql` INSERT INTO creations (user_id, prompt, content, type) 
             VALUES (${userId}, ${prompt}, ${JSON.stringify(mockImages)}, 'images')`;
-        } catch {}
+        } catch (dbErr) {
+            console.error('DB Insert Error (generateImages):', dbErr.message);
+        }
 
         if (plan !== 'premium') {
             try {
-                await clerkClient.users.updateUserMetadata(userId, {
+                await clerkClient.users.updateUser(userId, {
                     privateMetadata: { free_usage: free_usage + 1 }
                 });
-            } catch {}
+            } catch (clerkErr) {
+                console.error('Clerk Update Error (generateImages):', clerkErr.message);
+            }
         }
 
         res.json({ success: true, images: mockImages })
@@ -153,6 +179,11 @@ export const reviewResume = async (req, res) => {
         const { resumeText } = req.body;
         const plan = req.plan;
         const free_usage = req.free_usage;
+
+        // Validate required fields
+        if (!resumeText || typeof resumeText !== 'string' || resumeText.trim().length === 0) {
+            return res.status(400).json({ success: false, message: "Resume text is required and must be a non-empty string" });
+        }
 
         if (plan !== 'premium' && free_usage >= 10) {
             return res.status(429).json({ success: false, message: "Limit reached. Upgrade to continue." });
@@ -175,14 +206,18 @@ export const reviewResume = async (req, res) => {
         try {
             await sql` INSERT INTO creations (user_id, prompt, content, type) 
             VALUES (${userId}, ${'Resume Review'}, ${content}, 'resume_review')`;
-        } catch {}
+        } catch (dbErr) {
+            console.error('DB Insert Error (reviewResume):', dbErr.message);
+        }
 
         if (plan !== 'premium') {
             try {
-                await clerkClient.users.updateUserMetadata(userId, {
+                await clerkClient.users.updateUser(userId, {
                     privateMetadata: { free_usage: free_usage + 1 }
                 });
-            } catch {}
+            } catch (clerkErr) {
+                console.error('Clerk Update Error (reviewResume):', clerkErr.message);
+            }
         }
 
         res.json({ success: true, review: content })
@@ -200,6 +235,11 @@ export const removeBackground = async (req, res) => {
         const plan = req.plan;
         const free_usage = req.free_usage;
 
+        // Validate required fields
+        if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.trim().length === 0) {
+            return res.status(400).json({ success: false, message: "Image URL is required and must be a non-empty string" });
+        }
+
         if (plan !== 'premium' && free_usage >= 10) {
             return res.status(429).json({ success: false, message: "Limit reached. Upgrade to continue." });
         }
@@ -211,14 +251,18 @@ export const removeBackground = async (req, res) => {
         try {
             await sql` INSERT INTO creations (user_id, prompt, content, type) 
             VALUES (${userId}, ${'Background Removal'}, ${processedImageUrl}, 'background_removal')`;
-        } catch {}
+        } catch (dbErr) {
+            console.error('DB Insert Error (removeBackground):', dbErr.message);
+        }
 
         if (plan !== 'premium') {
             try {
-                await clerkClient.users.updateUserMetadata(userId, {
+                await clerkClient.users.updateUser(userId, {
                     privateMetadata: { free_usage: free_usage + 1 }
                 });
-            } catch {}
+            } catch (clerkErr) {
+                console.error('Clerk Update Error (removeBackground):', clerkErr.message);
+            }
         }
 
         res.json({ success: true, processedImageUrl })
@@ -236,6 +280,11 @@ export const removeObject = async (req, res) => {
         const plan = req.plan;
         const free_usage = req.free_usage;
 
+        // Validate required fields
+        if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.trim().length === 0) {
+            return res.status(400).json({ success: false, message: "Image URL is required and must be a non-empty string" });
+        }
+
         if (plan !== 'premium' && free_usage >= 10) {
             return res.status(429).json({ success: false, message: "Limit reached. Upgrade to continue." });
         }
@@ -247,14 +296,18 @@ export const removeObject = async (req, res) => {
         try {
             await sql` INSERT INTO creations (user_id, prompt, content, type) 
             VALUES (${userId}, ${'Object Removal'}, ${processedImageUrl}, 'object_removal')`;
-        } catch {}
+        } catch (dbErr) {
+            console.error('DB Insert Error (removeObject):', dbErr.message);
+        }
 
         if (plan !== 'premium') {
             try {
-                await clerkClient.users.updateUserMetadata(userId, {
+                await clerkClient.users.updateUser(userId, {
                     privateMetadata: { free_usage: free_usage + 1 }
                 });
-            } catch {}
+            } catch (clerkErr) {
+                console.error('Clerk Update Error (removeObject):', clerkErr.message);
+            }
         }
 
         res.json({ success: true, processedImageUrl })

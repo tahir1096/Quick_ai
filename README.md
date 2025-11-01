@@ -88,21 +88,48 @@ Run the SQL schema in your Neon database:
 
 ### 5. Start the application
 
-#### Start the server (Terminal 1)
+You can start the application in two ways:
+
+#### Option A: Start both together (recommended for development)
+```bash
+npm run dev
+```
+This will start both the server and client concurrently.
+
+#### Option B: Start individually (if Option A has issues)
+
+**Terminal 1 - Start the server:**
 ```bash
 cd server
 npm run server
 ```
 
-#### Start the client (Terminal 2)
+**Terminal 2 - Start the client:**
 ```bash
 cd client
 npm run dev
 ```
 
 The application will be available at:
-- Frontend: http://localhost:5173
+- Frontend: http://localhost:5173 (or http://localhost:5174 if port 5173 is in use)
 - Backend: http://localhost:3000
+
+### 6. Testing the API
+
+After the server is running, you can test the API endpoints:
+
+```bash
+# In a new terminal, run the test suite
+node test-api.js
+```
+
+Or run the comprehensive integration tests:
+
+```bash
+node test-integration.js
+```
+
+Expected output: All tests should pass (9/9 with 100% success rate)
 
 ## 🔑 API Keys Setup
 

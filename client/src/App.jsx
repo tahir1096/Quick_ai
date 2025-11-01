@@ -17,8 +17,14 @@ export const App = () => {
   const { getToken } = useAuth()
   
   useEffect(() => {
-    getToken().then((token) => console.log(token));
-  }, [])
+    getToken()
+      .then((token) => {
+        if (token) console.log('User token retrieved');
+      })
+      .catch((err) => {
+        console.warn('User not authenticated or token fetch failed:', err);
+      });
+  }, [getToken])
   return (
     <div>
       <Routes>

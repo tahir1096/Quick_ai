@@ -77,6 +77,7 @@ CREATE INDEX IF NOT EXISTS idx_creations_created_at ON creations(created_at);
 1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Create a new API key
 3. Copy the key to `GEMINI_API_KEY` in your server `.env`
+4. (Optional) Test the API with: `node test-api.js` (requires server running)
 
 ## 🚀 Running the Application
 
