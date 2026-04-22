@@ -1,3 +1,4 @@
+
 # Quick AI - AI-Powered Content Creation Platform
 
 A comprehensive MERN stack application that provides various AI-powered tools for content creation, including article writing, blog title generation, image generation, resume reviewing, and more.
